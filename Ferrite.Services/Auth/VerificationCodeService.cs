@@ -50,7 +50,8 @@ public interface IVerificationCodeService
 
     ValueTask<VerifiedChallenge?> VerifyAsync(VerificationPurpose purpose,
         long authKeyId, long subjectId, string publicHash, string code,
-        bool consume = true, CancellationToken cancellationToken = default);
+        bool consume = true, CancellationToken cancellationToken = default,
+        bool ignoreAuthKey = false);
 
     ValueTask<VerifiedChallenge?> GetActiveAsync(VerificationPurpose purpose,
         long authKeyId, long subjectId, string expectedPublicHash,
@@ -127,7 +128,8 @@ public sealed class VerificationCodeService : IVerificationCodeService
     public async ValueTask<VerifiedChallenge?> VerifyAsync(
         VerificationPurpose purpose, long authKeyId, long subjectId,
         string publicHash, string code, bool consume = true,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool ignoreAuthKey = false)
     {
         byte[] suppliedDigest = Digest(code);
         try
@@ -144,7 +146,7 @@ public sealed class VerificationCodeService : IVerificationCodeService
             {
                 var view = challenge.AsVerificationChallenge();
                 if (!Matches(view, purpose, authKeyId, subjectId,
-                        suppliedDigest, UnixNow()))
+                        suppliedDigest, UnixNow(), ignoreAuthKey))
                 {
                     return null;
                 }
@@ -168,7 +170,7 @@ public sealed class VerificationCodeService : IVerificationCodeService
                 var consumedView = consumedValue.AsVerificationChallenge();
                 return consumedView.ChallengeId == verified.ChallengeId &&
                        Matches(consumedView, purpose, authKeyId, subjectId,
-                           suppliedDigest, UnixNow())
+                           suppliedDigest, UnixNow(), ignoreAuthKey)
                     ? ToVerifiedChallenge(consumedView)
                     : null;
             }
@@ -181,9 +183,10 @@ public sealed class VerificationCodeService : IVerificationCodeService
 
     private static bool Matches(VerificationChallenge challenge,
         VerificationPurpose purpose, long authKeyId, long subjectId,
-        ReadOnlySpan<byte> suppliedDigest, int now) =>
+        ReadOnlySpan<byte> suppliedDigest, int now,
+        bool ignoreAuthKey = false) =>
         challenge.Purpose == (int)purpose &&
-        challenge.AuthKeyId == authKeyId &&
+        (ignoreAuthKey || challenge.AuthKeyId == authKeyId) &&
         challenge.SubjectId == subjectId &&
         challenge.ExpiresAt > now &&
         CryptographicOperations.FixedTimeEquals(challenge.CodeDigest,

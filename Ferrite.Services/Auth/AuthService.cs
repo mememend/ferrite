@@ -167,6 +167,12 @@ public class AuthService : IAuthService
         VerifiedChallenge? verified = await _verificationCodes.VerifyAsync(
             VerificationPurpose.LoginPhone, authKeyId, 0, phoneCodeHash,
             phoneCode);
+        if (verified is not { })
+        {
+            verified = await _verificationCodes.VerifyAsync(
+                VerificationPurpose.LoginPhone, authKeyId, 0, phoneCodeHash,
+                phoneCode, ignoreAuthKey: true);
+        }
         if (verified is not { } challenge ||
             !StringComparer.Ordinal.Equals(challenge.Destination, phoneNumber))
         {
