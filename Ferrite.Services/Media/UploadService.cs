@@ -822,7 +822,7 @@ public class UploadService : IUploadService
 
         long? thumbnailFileId = FindThumbnail(request.PhotoId, request.ThumbSize);
         return thumbnailFileId == null
-            ? DownloadResolution.InvalidLocation
+            ? new DownloadResolution(request.PhotoId, null)
             : new DownloadResolution(thumbnailFileId.Value, null);
     }
 
