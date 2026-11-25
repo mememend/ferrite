@@ -24,7 +24,7 @@ echo ==================================================
 echo.
 
 rem ---------- 1. .NET 10 SDK ----------
-echo [1/6] Проверяю .NET 10 SDK
+echo [1/6] Проверяю .NET SDK (нужен 10 или новее)
 call :find_dotnet
 if not errorlevel 1 goto dotnet_ok
 
@@ -137,12 +137,14 @@ goto end
 
 rem ---------- helpers ----------
 :find_dotnet
-rem возвращает 0, если есть SDK 10.x
+rem возвращает 0, если установлен SDK 10.x или новее (10, 11, 12...)
 where dotnet >nul 2>&1
 if errorlevel 1 exit /b 1
-dotnet --list-sdks 2>nul | findstr /r "^10\." >nul
-if errorlevel 1 exit /b 1
-exit /b 0
+set "SDKMAJOR="
+for /f "tokens=1 delims=." %%v in ('dotnet --version 2^>nul') do set "SDKMAJOR=%%v"
+if not defined SDKMAJOR exit /b 1
+if %SDKMAJOR% GEQ 10 exit /b 0
+exit /b 1
 
 :fail
 echo.
